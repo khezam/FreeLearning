@@ -18,6 +18,9 @@ def user(name):
 # query string appended in the url
 @app.route('/user')
 def user_query():
+    """
+        This is how pass a query string to the url
+    """
     if not request.args.get('name'):
         return "<h1>Hello Stranger!</h1>"
     return f"<h1>Hello {request.args.get('name')}</h1>"
