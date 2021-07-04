@@ -1,7 +1,7 @@
 from flask import Flask, redirect, url_for, request, make_response, session
 
 app = Flask(__name__)
-
+app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
 # Added an HTML element to this route.
 def index():
     return "<h1>Hello World!</h1>"
@@ -37,12 +37,15 @@ app.add_url_rule('/home', endpoint='test_func', view_func=test_endpoint)
 """
 @app.route('/response')
 def set_response():
+    print(session)
+    if session and session['name']:
+        return f"<h1>Welcome back, {name}!</h1>"
     if not request.args.get('name'):
         return "<h1>Hello Stranger!</h1>", 200, {'Server': 'Unknown', 'Set_Cookie': 'answer= 42'}
     response = make_response(f"<h1>Hello {request.args.get('name')}</h1>")
     response.set_cookie('answer', '42')
     response.headers['Server'] = 'Unknown'
-    
+    session['name'] = request.args.get('name')
     return response
 
 """
