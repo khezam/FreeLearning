@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, make_response, session
 
 app = Flask(__name__)
 
@@ -31,6 +31,19 @@ def test_endpoint():
     return redirect(url_for('index_func'))
 
 app.add_url_rule('/home', endpoint='test_func', view_func=test_endpoint)
+
+"""
+    The set_response veiw fucntion returns back headers that is manually set.
+"""
+@app.route('/response')
+def set_response():
+    if not request.args.get('name'):
+        return "<h1>Hello Stranger!</h1>", 200, {'Server': 'Unknown', 'Set_Cookie': 'answer= 42'}
+    response = make_response(f"<h1>Hello {request.args.get('name')}</h1>")
+    response.set_cookie('answer', '42')
+    response.headers['Server'] = 'Unknown'
+    
+    return response
 
 """
     The url_map is a pointer of the struct Map. I used the pointer to see the route 
