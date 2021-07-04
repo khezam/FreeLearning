@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, make_response, session
+from flask import Flask, redirect, url_for, request, make_response, session, send_file
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
@@ -47,6 +47,11 @@ def set_response():
     response.headers['Server'] = 'Unknown'
     session['name'] = request.args.get('name')
     return response
+
+@app.route('/uploads')
+def file_pract():
+    open("/Users/rogers/Desktop/flasky/names.txt", "w").close()
+    return send_file('/Users/rogers/Desktop/flasky/names.txt', as_attachment=True)
 
 """
     The url_map is a pointer of the struct Map. I used the pointer to see the route 
