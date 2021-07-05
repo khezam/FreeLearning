@@ -1,4 +1,6 @@
 from flask import Flask, redirect, url_for, request, make_response, session, send_file
+import unittest 
+# from tests.test_app import ApplicationTest
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
@@ -52,6 +54,12 @@ def set_response():
 def file_pract():
     open("/Users/rogers/Desktop/flasky/names.txt", "w").close()
     return send_file('/Users/rogers/Desktop/flasky/names.txt', as_attachment=True)
+
+@app.cli.command("test_click")
+def test_click():
+    tests = unittest.TestLoader().discover(start_dir='/Users/rogers/Desktop/flasky/tests')
+    runner = unittest.TextTestRunner(verbosity=2)
+    runner.run(tests)
 
 """
     The url_map is a pointer of the struct Map. I used the pointer to see the route 
