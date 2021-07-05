@@ -57,7 +57,12 @@ def file_pract():
 
 @app.cli.command("test_click")
 def test_click():
-    tests = unittest.TestLoader().discover(start_dir='/Users/rogers/Desktop/flasky/tests')
+    """
+        This is a customized command line that we could use by flask. The command line containes unitttests that 
+        looks for the given firectory and run each file inside it. I read the doc and I did it! :) 
+    """
+    import os 
+    tests = unittest.TestLoader().discover(start_dir= os.path.dirname(__file__) + '/tests')
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(tests)
 
