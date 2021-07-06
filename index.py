@@ -1,11 +1,11 @@
-from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages
 import unittest 
-import click 
-
-
+import click
+from flask_wtf.csrf import CSRFProtect
+from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
+csrf = CSRFProtect(app)
 
 def index():
     if not session.get('known'):
@@ -69,7 +69,6 @@ def login():
             return redirect(url_for('index_func'))
     return render_template('login_page.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if session.get('known'):
@@ -94,7 +93,6 @@ def logout():
         return redirect(url_for('login'))
     session['known'] = False 
     return redirect(url_for('login'))
-
 
 @app.cli.command("test_click")
 def test_click():
