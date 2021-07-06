@@ -8,8 +8,6 @@ app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
 csrf = CSRFProtect(app)
 
 def index():
-    if not session.get('known'):
-        return redirect(url_for('login'))
     return render_template('base.html', username=session.get('username'))
 
 app.add_url_rule('/', endpoint='index_func', view_func=index)
@@ -89,10 +87,15 @@ def register():
 
 @app.route('/logout')
 def logout():
-    if not session.get('known'):
-        return redirect(url_for('login'))
     session['known'] = False 
     return redirect(url_for('login'))
+
+@app.before_request
+def is_loged_in():
+    if request.endpoint == 'logout' or request.endpoint == 'index_func':
+        if not session.get('known'):
+            return redirect(url_for('login'))
+    return 
 
 @app.cli.command("test_click")
 def test_click():
