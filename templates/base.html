@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {% block head %}
+            <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>
+                {% if title %}
+                    Flasky - {% block title %}{% endblock title %}
+                {% else %}
+                    Flasky
+                {% endif %}
+            </title>
+        {% endblock head %}
+    </head>
+    <body>
+        <div>
+            {% set messages = get_flashed_messages(with_categories=True)  %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <h1>{{ message }}</h1>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {% block content %}{% endblock content%}
+        <h1>
+            {% if username %}
+                    Hello, {{username}}!
+            {% endif %}
+        </h1>
+    </body>
+</html>
