@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock title %}
+{% from 'base.html' import user_posts %}
+
+{% block content %}
+    <h3>post</h3>
+    <form action="{{ url_for('index_func') }}" method="POST">
+        {{ form.hidden_tag()  }}
+        <div>
+            {{ form.user_post.label }}
+            {{ form.user_post() }}
+        </div>
+        <div>
+            {{ form.submit() }}
+        </div>
+        <div>
+            {{ user_posts(posts) }}
+        </div>
+    </form>
+
+{% endblock content %}

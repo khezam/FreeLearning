@@ -1,17 +1,25 @@
-import unittest 
+import os
 import click
-from forms import RegisterationForm, LoginForm
-from flask_wtf.csrf import CSRFProtect
-from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages
+from forms import RegisterationForm, LoginForm, PostForm
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
-csrf = CSRFProtect(app)
 
 def index():
-    return render_template('base.html', username=session.get('username'))
+    """
+        It turns out that in a sessoin you can only stor a key/value pair and the value can not be another data structure.
+        But, you might able to have a data structure as a value if the session in the server-side.
+    """
+    form = PostForm()
+    if form.is_submitted() and form.user_post.data:
+        session['posts'] = form.user_post.data +  ', ' + session['posts']
+        return redirect(url_for('index_func'))
+    print(session)
+    return render_template('post.html', form=form, posts=session['posts'].split(','))
 
-app.add_url_rule('/', endpoint='index_func', view_func=index)
+app.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
 
 @app.route('/user/<name>')
 def user(name):
@@ -51,8 +59,8 @@ def set_response():
 
 @app.route('/uploads')
 def file_pract():
-    open("/Users/rogers/Desktop/flasky/names.txt", "w").close()
-    return send_file('/Users/rogers/Desktop/flasky/names.txt', as_attachment=True)
+    open(os.path.dirname(__file__) + "/names.txt", "w").close()
+    return send_file(os.path.dirname(__file__) + '/names.txt', as_attachment=True)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -61,7 +69,7 @@ def login():
 
     form = LoginForm()
     if request.method == "POST":
-        if form.email.data != session.get('email') or form.password.data != session.get('password'):
+        if form.email.data != session.get('email') or not check_password_hash(session.get('password'), form.password.data):
             flash('Invalid email or password', 'error')
         else:
             session['known'] = True
@@ -76,7 +84,7 @@ def register():
 
     form = RegisterationForm()
     if form.validate_on_submit():
-        if session.get('username') == form.username.data or session.get('email') == form.username.data:
+        if session.get('username') == form.username.data or session.get('email') == form.email.data:
             field = 'username'
             if session.get('email') == form.email.data:
                 field = 'email'
@@ -84,7 +92,8 @@ def register():
         else:
             session['username'] = form.username.data
             session['email'] = form.email.data
-            session['password'] = form.password.data  
+            session['password'] = generate_password_hash(form.password.data)
+            session['posts'] = ''
             session['known'] = False
             flash(f'You have successfully created an account, please login!', 'success')
             return redirect(url_for('login'))
@@ -108,7 +117,7 @@ def test_click():
         This is a customized command line that we could use by flask. The command line containes unitttests that 
         looks for the given firectory and run each file inside it. I read the doc and I did it! :) 
     """
-    import os
+    import unittest 
     tests = unittest.TestLoader().discover(start_dir= os.path.dirname(__file__) + '/tests')
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(tests)

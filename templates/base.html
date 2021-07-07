@@ -30,6 +30,14 @@
                 {% endfor %}
             {% endif %}
         {% endmacro %}
+
+        {% macro user_posts(posts) %}
+            {% if posts %}
+                {% for post in posts %}
+                    <p>{{ post }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endmacro %}
         {% block content %}{% endblock content%}
         <h1>
             {% if username %}
