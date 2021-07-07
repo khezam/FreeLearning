@@ -1,5 +1,6 @@
 import unittest 
 import click
+from forms import RegisterationForm, LoginForm
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages
 
@@ -58,32 +59,36 @@ def login():
     if session.get('known'):
         return redirect(url_for('index_func'))
 
+    form = LoginForm()
     if request.method == "POST":
-        if request.form.get('email') != session.get('email') or request.form.get('username') != session.get('username'):
-            flash('Invalid username or email', 'error')
+        if form.email.data != session.get('email') or form.password.data != session.get('password'):
+            flash('Invalid email or password', 'error')
         else:
             session['known'] = True
             flash('You have successfully loged in')
             return redirect(url_for('index_func'))
-    return render_template('login_page.html')
+    return render_template('login_page.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if session.get('known'):
         return redirect(url_for('index_func'))
 
-    if request.method == 'POST':
-        if session.get('username') == request.form.get('username') or session.get('email') == request.form.get('email'):
+    form = RegisterationForm()
+    if form.validate_on_submit():
+        if session.get('username') == form.username.data or session.get('email') == form.username.data:
             field = 'username'
-            if session.get('email') == request.form.get('email'):
+            if session.get('email') == form.email.data:
                 field = 'email'
             flash(f'This {field} exists already. Please choose a different {field}', 'error')
         else:
-            session['username'] = request.form.get('username')
-            session['email'] = request.form.get('email')
+            session['username'] = form.username.data
+            session['email'] = form.email.data
+            session['password'] = form.password.data  
             session['known'] = False
+            flash(f'You have successfully created an account, please login!', 'success')
             return redirect(url_for('login'))
-    return render_template('register_page.html')
+    return render_template('register_page.html', form=form)
 
 @app.route('/logout')
 def logout():
@@ -94,7 +99,7 @@ def logout():
 def is_loged_in():
     if request.endpoint == 'logout' or request.endpoint == 'index_func':
         if not session.get('known'):
-            return redirect(url_for('login'))
+            return render_template('login_page.html', form=LoginForm()), 401
     return 
 
 @app.cli.command("test_click")

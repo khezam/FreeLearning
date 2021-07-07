@@ -23,6 +23,13 @@
                 {% endfor %}
             {% endif %}
         </div>
+        {% macro field_errors(errors) %}
+            {% if errors %}
+                {% for error in errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        {% endmacro %}
         {% block content %}{% endblock content%}
         <h1>
             {% if username %}
