@@ -4,8 +4,12 @@ from flask_wtf.csrf import CSRFProtect
 from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'lzdifhjeoiwufn'
-csrf = CSRFProtect(app)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
 
 def index():
     return render_template('base.html', username=session.get('username'))
