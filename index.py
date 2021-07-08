@@ -80,7 +80,7 @@ def login():
             session['known'] = True
             flash('You have successfully loged in')
             return redirect(url_for('index_func'))
-    return render_template('login_page.html', form=form)
+    return render_template('login_page.html', form=form, session=session)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -102,7 +102,7 @@ def register():
             session['known'] = False
             flash(f'You have successfully created an account, please login!', 'success')
             return redirect(url_for('login'))
-    return render_template('register_page.html', form=form)
+    return render_template('register_page.html', form=form, session=session)
 
 @app.route('/logout')
 def logout():

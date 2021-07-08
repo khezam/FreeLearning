@@ -16,6 +16,12 @@
     </head>
     <body>
         <div>
+            {% if session.get('known') %}
+                FreeLearning: <a href="{{ url_for('index_func') }}">Home</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% endif %}
+        </div>
+        <div>
             {% set messages = get_flashed_messages(with_categories=True)  %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -26,7 +32,7 @@
         {% macro field_errors(errors) %}
             {% if errors %}
                 {% for error in errors %}
-                    <span>{{ error }}</span>
+                    <span style="color: red;">{{ error }}</span>
                 {% endfor %}
             {% endif %}
         {% endmacro %}

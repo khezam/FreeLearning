@@ -9,20 +9,19 @@
         <div>
             {{ field_errors(form.email.errors) }}
             <div>
-                {{ form.email.label }}
+                {{ form.email.label }}<br> 
                 {{ form.email(value= request.form.get('email', default='')) }}
             </div>
         </div>
         <div>
             {{ field_errors(form.password.errors) }} 
             <div>
-                {{ form.password.label }}
+                {{ form.password.label }}<br>
                 {{ form.password() }}
             </div>
         </div>
         <div>
-            {{ form.remember_me.label }}
-            {{ form.remember_me() }}
+            {{ form.remember_me() }} {{ form.remember_me.label }}
         </div>
         <div>
             {{ form.submit() }}
