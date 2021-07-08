@@ -83,7 +83,7 @@ def login():
             session['known'] = True
             flash('You have successfully loged in')
             return redirect(url_for('index_func'))
-    return render_template('login_page.html', form=form)
+    return render_template('login_page.html', form=form, session=session)
 
 def send_email(name):
     msg = Message("Welcome!", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=['flaskyproject@gmail.com'])
@@ -107,7 +107,7 @@ def register():
         send_email(form.username.data)
         flash(f'An email has been sent to your account, please confirm!', 'success')
         return redirect(url_for('login'))
-    return render_template('register_page.html', form=form)
+    return render_template('register_page.html', form=form, session=session)
 
 @app.route('/logout')
 def logout():
