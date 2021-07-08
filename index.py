@@ -1,16 +1,20 @@
 import os
 import click
+from flask_mail import Message, Mail
 from forms import RegisterationForm, LoginForm, PostForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['FLASKY_ADMIN'] = os.getenv('FLASKY_ADMIN')
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = os.getenv('MAIL_PORT')
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS')
+mail = Mail(app)
 
 def index():
     """
@@ -21,7 +25,6 @@ def index():
     if form.is_submitted() and form.user_post.data:
         session['posts'] = form.user_post.data +  ', ' + session['posts']
         return redirect(url_for('index_func'))
-    print(session)
     return render_template('post.html', form=form, posts=session['posts'].split(','))
 
 app.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
@@ -82,6 +85,13 @@ def login():
             return redirect(url_for('index_func'))
     return render_template('login_page.html', form=form)
 
+def send_email(name):
+    msg = Message("Welcome!", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=['flaskyproject@gmail.com'])
+    msg.html = render_template('mail.html', name=name)
+    mail.send(msg)
+    return
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if session.get('known'):
@@ -89,19 +99,14 @@ def register():
 
     form = RegisterationForm()
     if form.validate_on_submit():
-        if session.get('username') == form.username.data or session.get('email') == form.email.data:
-            field = 'username'
-            if session.get('email') == form.email.data:
-                field = 'email'
-            flash(f'This {field} exists already. Please choose a different {field}', 'error')
-        else:
-            session['username'] = form.username.data
-            session['email'] = form.email.data
-            session['password'] = generate_password_hash(form.password.data)
-            session['posts'] = ''
-            session['known'] = False
-            flash(f'You have successfully created an account, please login!', 'success')
-            return redirect(url_for('login'))
+        session['username'] = form.username.data
+        session['email'] = form.email.data
+        session['password'] = generate_password_hash(form.password.data)
+        session['posts'] = ''
+        session['known'] = False
+        send_email(form.username.data)
+        flash(f'An email has been sent to your account, please confirm!', 'success')
+        return redirect(url_for('login'))
     return render_template('register_page.html', form=form)
 
 @app.route('/logout')
