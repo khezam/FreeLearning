@@ -1,3 +1,4 @@
+from models import User
 from flask import session, flash 
 from flask_wtf import FlaskForm
 from wtforms.fields.html5 import EmailField
@@ -7,7 +8,7 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField, Boole
 
 class LoginForm(FlaskForm):
     email = EmailField(label='Email', validators=[DataRequired(), Length(min=5, max=20), Email()])
-    password = PasswordField(label='Password', validators=[DataRequired(), Length(min=5, max=20)])
+    password = PasswordField(label='Password', validators=[DataRequired(), Length(min=5, max=20, message='Invalid email or password')])
     remember_me = BooleanField(label='Remember', default=False)
     submit = SubmitField(label='Submit', validators=[DataRequired()])
 
@@ -20,12 +21,14 @@ class RegisterationForm(FlaskForm):
     submit = SubmitField(label='Submit')
 
     def validate_username(form, field):
-        if field.data == session.get('username'):
-            raise ValueError ('[This username exists already. Please choose a different username]')
+        user = User.query.filter_by(username=field.data).first()
+        if user and user.username == field.data:
+                raise ValueError ('[This username exists already. Please choose a different username]')
             
     def validate_email(form, field):
-        if field.data == session.get('email'):
-            raise ValueError ('[This email exists already. Please choose a different email]')       
+        user = User.query.filter_by(email=field.data).first()
+        if user and user.email == field.data:
+                raise ValueError ('[This email exists already. Please choose a different email]')       
 
 class PostForm(FlaskForm):
     user_post = TextAreaField(label='Post')

@@ -1,7 +1,9 @@
 import os
 import click
+import psycopg2
+from flask_migrate import Migrate
 from flask_mail import Message, Mail
-from forms import RegisterationForm, LoginForm, PostForm
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g 
 
@@ -14,7 +16,13 @@ app.config['FLASKY_ADMIN'] = os.getenv('FLASKY_ADMIN')
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
 app.config['MAIL_PORT'] = os.getenv('MAIL_PORT')
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 mail = Mail(app)
+from models import User, Role
+from forms import RegisterationForm, LoginForm, PostForm
 
 def index():
     """
@@ -76,8 +84,9 @@ def login():
         return redirect(url_for('index_func'))
 
     form = LoginForm()
-    if request.method == "POST":
-        if form.email.data != session.get('email') or not check_password_hash(session.get('password'), form.password.data):
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if not user or not check_password_hash(user.password_hash, form.password.data) or user.email != form.email.data:
             flash('Invalid email or password', 'error')
         else:
             session['known'] = True
@@ -91,7 +100,6 @@ def send_email(name):
     mail.send(msg)
     return
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if session.get('known'):
@@ -99,12 +107,10 @@ def register():
 
     form = RegisterationForm()
     if form.validate_on_submit():
-        session['username'] = form.username.data
-        session['email'] = form.email.data
-        session['password'] = generate_password_hash(form.password.data)
+        User.add_user(form)
         session['posts'] = ''
         session['known'] = False
-        send_email(form.username.data)
+        # send_email(form.username.data)
         flash(f'An email has been sent to your account, please confirm!', 'success')
         return redirect(url_for('login'))
     return render_template('register_page.html', form=form, session=session)
@@ -116,6 +122,10 @@ def logout():
 
 @app.before_request
 def is_loged_in():
+    """
+        Using a hook function to check if the user is logged in. Later we will see how to use
+        flask login manager.
+    """
     if request.endpoint == 'logout' or request.endpoint == 'index_func':
         if not session.get('known'):
             return render_template('login_page.html', form=LoginForm()), 401
@@ -131,6 +141,14 @@ def test_click():
     tests = unittest.TestLoader().discover(start_dir= os.path.dirname(__file__) + '/tests')
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(tests)
+
+@app.shell_context_processor
+def make_shell_context():
+    """
+        Rather than importing the objects of the databse, Flask gives the ability to automate this 
+        by useing shell context processor.
+    """
+    return dict(db=db, User=User, Role=Role)
 
 """
     The url_map is a pointer of the struct Map. I used the pointer to see the route 
