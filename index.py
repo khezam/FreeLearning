@@ -21,8 +21,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 mail = Mail(app)
+# login_manager = LoginManager(app)
 from models import User, Role
-from forms import RegisterationForm, LoginForm, PostForm
+from forms import RegisterationForm, LoginForm, PostForm, ResetPassword
 
 def index():
     """
@@ -33,7 +34,7 @@ def index():
     if form.is_submitted() and form.user_post.data:
         session['posts'] = form.user_post.data +  ', ' + session['posts']
         return redirect(url_for('index_func'))
-    return render_template('post.html', form=form, posts=session['posts'].split(','))
+    return render_template('post.html', form=form, posts=session.get('posts', default='').split(','))
 
 app.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
 
@@ -107,7 +108,9 @@ def register():
 
     form = RegisterationForm()
     if form.validate_on_submit():
-        User.add_user(form)
+        user = User.add_user(form)
+        db.session.commit()
+        session['id'] = user.id
         session['posts'] = ''
         session['known'] = False
         # send_email(form.username.data)
@@ -126,10 +129,21 @@ def is_loged_in():
         Using a hook function to check if the user is logged in. Later we will see how to use
         flask login manager.
     """
-    if request.endpoint == 'logout' or request.endpoint == 'index_func':
+    if request.endpoint == 'logout' or request.endpoint == 'index_func' or request.endpoint == 'reset_password':
         if not session.get('known'):
             return render_template('login_page.html', form=LoginForm()), 401
     return 
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    form = ResetPassword()
+    if form.validate_on_submit():
+        user = User.query.filter_by(id=session.get('id')).first()
+        user.set_password = form.new_password.data
+        db.session.commit()
+        flash('Your password has been reseted.')
+        return redirect(url_for('index_func'))
+    return render_template('edit_password.html', form=form)
 
 @app.cli.command("test_click")
 def test_click():

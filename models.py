@@ -20,5 +20,14 @@ class User(db.Model ):
     def add_user(form):
         user = User(username=form.username.data, email=form.email.data, password_hash=generate_password_hash(form.password.data))
         db.session.add(user)
-        db.session.commit()
-        return 
+        return self 
+        
+    @property
+    def set_password(self):
+        raise ValueError("This method is not callable")
+
+    @set_password.setter
+    def set_password(self, new_password):
+        self.password_hash = generate_password_hash(new_password)
+        db.session.add(self)
+        return  

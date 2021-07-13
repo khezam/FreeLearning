@@ -19,6 +19,7 @@
             {% if session.get('known') %}
                 FreeLearning: <a href="{{ url_for('index_func') }}">Home</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
+                <a href="{{ url_for('reset_password') }}">Rest-Password</a>
             {% endif %}
         </div>
         <div>
