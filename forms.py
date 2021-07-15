@@ -31,7 +31,7 @@ class RegisterationForm(FlaskForm):
                 raise ValueError ('[This email exists already. Please choose a different email]')       
 
 class PostForm(FlaskForm):
-    user_post = TextAreaField(label='Post')
+    user_post = TextAreaField(label='Post', validators=[DataRequired()])
     submit = SubmitField(label='Submit')
 
 class ResetPassword(FlaskForm):
@@ -40,6 +40,6 @@ class ResetPassword(FlaskForm):
     submit = SubmitField(label='Submit')
 
     def validate_old_password(form, field):
-        user = User.query.filter_by(id=session.get('id')).first()
+        user = User.query.filter_by(id=session.get('_user_id')).first()
         if not check_password_hash(user.password_hash, field.data):
             raise ValueError ('[Invalid passwords]')

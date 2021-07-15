@@ -4,6 +4,7 @@ import psycopg2
 from flask_migrate import Migrate
 from flask_mail import Message, Mail
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g 
 
@@ -21,9 +22,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 mail = Mail(app)
-# login_manager = LoginManager(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 from models import User, Role
 from forms import RegisterationForm, LoginForm, PostForm, ResetPassword
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.filter_by(id=user_id).first()
 
 def index():
     """
@@ -32,8 +38,9 @@ def index():
     """
     form = PostForm()
     if form.is_submitted() and form.user_post.data:
-        session['posts'] = form.user_post.data +  ', ' + session['posts']
+        session['posts'] = form.user_post.data +  ',' + session.get('posts', default='')
         return redirect(url_for('index_func'))
+    print(session.get('posts', default='').split(','))
     return render_template('post.html', form=form, posts=session.get('posts', default='').split(','))
 
 app.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
@@ -82,7 +89,7 @@ def file_pract():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get('known'):
-        return redirect(url_for('index_func'))
+        return redirect(url_for('index_func')) 
 
     form = LoginForm()
     if form.validate_on_submit():
@@ -90,6 +97,7 @@ def login():
         if not user or not check_password_hash(user.password_hash, form.password.data) or user.email != form.email.data:
             flash('Invalid email or password', 'error')
         else:
+            login_user(user, remember=form.remember_me.data)
             session['known'] = True
             flash('You have successfully loged in')
             return redirect(url_for('index_func'))
@@ -119,8 +127,11 @@ def register():
     return render_template('register_page.html', form=form, session=session)
 
 @app.route('/logout')
+@login_required
 def logout():
-    session['known'] = False 
+    session['known'] = False
+    session['posts'] = ''
+    logout_user()
     return redirect(url_for('login'))
 
 @app.before_request
@@ -129,22 +140,34 @@ def is_loged_in():
         Using a hook function to check if the user is logged in. Later we will see how to use
         flask login manager.
     """
-    if request.endpoint == 'logout' or request.endpoint == 'index_func' or request.endpoint == 'reset_password':
+    authenticated_routes = {'logout', 'index_func', 'reset_password', 'user_profile'}
+    if request.endpoint in authenticated_routes:
+        print('it came here')
         if not session.get('known'):
+            flash("You need to log in", "error")
             return render_template('login_page.html', form=LoginForm()), 401
     return 
 
 @app.route('/reset-password', methods=['GET', 'POST'])
+@login_required
 def reset_password():
     form = ResetPassword()
     if form.validate_on_submit():
-        user = User.query.filter_by(id=session.get('id')).first()
+        user = User.query.filter_by(id=session.get('_user_id')).first()
         user.set_password = form.new_password.data
         db.session.commit()
         flash('Your password has been reseted.')
         return redirect(url_for('index_func'))
     return render_template('edit_password.html', form=form)
 
+@app.route('/user-profile/<username>')
+@login_required
+def user_profile(username):
+    from hashlib import md5 
+    user = User.query.filter_by(username=username).first_or_404()
+    session['user_avatar'] = md5(b'{user.email}').hexdigest()
+    return render_template('user.html', posts=session.get('posts', default='').split(','), user=user)
+    
 @app.cli.command("test_click")
 def test_click():
     """

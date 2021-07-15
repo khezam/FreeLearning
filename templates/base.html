@@ -17,9 +17,14 @@
     <body>
         <div>
             {% if session.get('known') %}
-                FreeLearning: <a href="{{ url_for('index_func') }}">Home</a>
-                <a href="{{ url_for('logout') }}">Logout</a>
-                <a href="{{ url_for('reset_password') }}">Rest-Password</a>
+                {% if user and user != current_user %}
+                    <br>
+                {% else %}
+                    FreeLearning: <a href="{{ url_for('index_func') }}">Home</a>
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                    <a href="{{ url_for('reset_password') }}">Reset-Password</a>
+                    <a href="{{ url_for('user_profile', username=current_user.username) }}">Profile</a>
+                {% endif %}
             {% endif %}
         </div>
         <div>
@@ -39,11 +44,11 @@
         {% endmacro %}
 
         {% macro user_posts(posts) %}
-            {% if posts %}
                 {% for post in posts %}
-                    <p>{{ post }}</p>
+                    {% if post != ' ' and post != '' %}
+                        <p><img src="https://www.gravatar.com/avatar/{session['user_avatar']}?s=50&d=identicon".format(hash) alt="">{{ post }}</p>
+                    {% endif %}
                 {% endfor %}
-            {% endif %}
         {% endmacro %}
         {% block content %}{% endblock content%}
         <h1>
