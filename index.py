@@ -1,4 +1,5 @@
 import os
+import jwt
 import click
 import psycopg2
 from flask_migrate import Migrate
@@ -6,7 +7,7 @@ from flask_mail import Message, Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g 
+from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g, abort
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -25,7 +26,7 @@ mail = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 from models import User, Role
-from forms import RegisterationForm, LoginForm, PostForm, ResetPassword
+from forms import RegisterationForm, LoginForm, PostForm, ResetPassword, ForgotPassword, NewPassword
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -159,6 +160,44 @@ def reset_password():
         flash('Your password has been reseted.')
         return redirect(url_for('index_func'))
     return render_template('edit_password.html', form=form)
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPassword()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first_or_404()
+        token = jwt.encode({'confirm': True}, app.config['SECRET_KEY'], algorithm='HS256')
+        session['token'] = token
+        msg = Message("Password Reset!", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=['flaskyproject@gmail.com'])
+        msg.html = render_template('token.html', name=user.username, token=token)
+        mail.send(msg)
+        flash('An email has been sent to you. Please check your email')
+        return redirect(url_for('login'))
+    return render_template('forgot_password.html', form=form)
+
+@app.route('/confirm/<token>')
+def confirm_token(token):
+    try:
+        confirm = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        session_token = jwt.decode(session.get('token'), app.config['SECRET_KEY'], algorithms=['HS256'])
+    except:
+        flash('This is token is invalid')
+        return redirect(url_for('forgot_password'))
+    return redirect(url_for('new_password'))
+
+@app.route('/new_password', methods=['GET', 'POST'])
+def new_password():
+    form = NewPassword()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        user.set_password = form.new_password.data
+        db.session.commit()
+        flash('Your password has been reseted.')
+        return redirect(url_for('login'))
+    return render_template('new_password.html', form=form)
+        
+
 
 @app.route('/user-profile/<username>')
 @login_required
