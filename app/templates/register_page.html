@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% from 'macro.html' import field_errors %}
+{% block title %}Register{% endblock title %}
+
+{% block content %}
+    <h1>Register</h1>
+    <form action="{{ url_for('auth.register') }}" method="POST">
+        {{ form.hidden_tag()  }}
+        <div>
+            {{ field_errors(form.username.errors) }}
+            <div>
+                {{ form.username.label }}
+                {{ form.username() }}
+            </div>
+        </div>
+        <div>
+            {{ field_errors(form.email.errors) }}
+            <div>
+                {{ form.email.label }}
+                {{ form.email() }}
+            </div>
+        </div>
+        <div>
+            {{ field_errors(form.password.errors) }} 
+            <div>
+                {{ form.password.label }}
+                {{ form.password() }}
+            </div>
+        </div>
+        <div>
+            {{ field_errors(form.confirm_password.errors) }}
+            <div>
+                {{ form.confirm_password.label }}
+                {{ form.confirm_password() }}
+            </div>
+        </div>
+        <div>
+            {{ form.remember_me.label }}
+            {{ form.remember_me() }}
+        </div>
+        <div>
+            {{ form.submit() }}
+        </div>
+        <span>Have an account? <a href="{{ url_for('auth.login') }}">Click here.</a></span>
+    </form>
+
+{% endblock content %}

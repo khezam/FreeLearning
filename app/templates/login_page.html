@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock title %}
+{% from 'macro.html' import field_errors %}
+
+{% block page_content %}
+    <h1>Login</h1>
+    <form action="{{ url_for('auth.login') }}" method="POST">
+        {{ form.hidden_tag()  }}
+        <div>
+            {{ field_errors(form.email.errors) }}
+            <div>
+                {{ form.email.label }}<br> 
+                {{ form.email(value= request.form.get('email', default='')) }}
+            </div>
+        </div>
+        <div>
+            {{ field_errors(form.password.errors) }} 
+            <div>
+                {{ form.password.label }}<br>
+                {{ form.password() }}
+            </div>
+        </div>
+        <div>
+            {{ form.remember_me() }} {{ form.remember_me.label }}
+        </div>
+        <div>
+            {{ form.submit() }}
+        </div>
+        <span>Need an account? <a href="{{ url_for('auth.register') }}">Click here.</a></span>
+    </form>
+    <span>Forgot password? <a href="{{ url_for('auth.forgot_password') }}">Click here.</a></span>
+
+{% endblock page_content %}

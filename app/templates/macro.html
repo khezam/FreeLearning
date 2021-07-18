@@ -1,0 +1,23 @@
+<div>
+    {% set messages = get_flashed_messages(with_categories=True)  %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <h1>{{ message }}</h1>
+        {% endfor %}
+    {% endif %}
+</div>
+{% macro field_errors(errors) %}
+    {% if errors %}
+        {% for error in errors %}
+            <span style="color: red;">{{ error }}</span>
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+{% macro user_posts(posts) %}
+        {% for post in posts %}
+            {% if post != ' ' and post != '' %}
+                <p><img src="https://www.gravatar.com/avatar/{session['user_avatar']}?s=50&d=identicon".format(hash) alt="">{{ post }}</p>
+            {% endif %}
+        {% endfor %}
+{% endmacro %}

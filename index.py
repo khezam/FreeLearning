@@ -8,8 +8,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, g, abort
+from config import Config as config 
 
 app = Flask(__name__)
+# app.config.from_object(config())
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
@@ -20,11 +22,13 @@ app.config['MAIL_PORT'] = os.getenv('MAIL_PORT')
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
+# db.init_app(app)
 migrate = Migrate(app, db)
 mail = Mail(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+app.login_view = 'login'
 from models import User, Role
 from forms import RegisterationForm, LoginForm, PostForm, ResetPassword, ForgotPassword, NewPassword
 
@@ -42,6 +46,7 @@ def index():
         session['posts'] = form.user_post.data +  ',' + session.get('posts', default='')
         return redirect(url_for('index_func'))
     print(session.get('posts', default='').split(','))
+    print(User.query.all())
     return render_template('post.html', form=form, posts=session.get('posts', default='').split(','))
 
 app.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
