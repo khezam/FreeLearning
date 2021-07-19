@@ -10,13 +10,12 @@ def index():
         It turns out that in a sessoin you can only stor a key/value pair and the value can not be another data structure.
         But, you might able to have a data structure as a value if the session in the server-side.
     """
+    print(request.cookies)
     form = PostForm()
     if form.is_submitted() and form.user_post.data:
         session['posts'] = form.user_post.data +  ',' + session.get('posts', default='')
         return redirect(url_for('main.index_func'))
-    print(session.get('posts', default='').split(','))
-    print(User.query.all())
-    return render_template('post.html', form=form, posts=session.get('posts', default='').split(','))
+    return render_template('main/post.html', form=form, posts=session.get('posts', default='').split(','))
 
 main.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
 
@@ -25,6 +24,7 @@ main.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', '
 def logout():
     session['known'] = False
     session['posts'] = ''
+    flash('You have been logged out.', 'success')
     logout_user()
     return redirect(url_for('auth.login'))
 
@@ -36,9 +36,9 @@ def reset_password():
         user = User.query.filter_by(id=session.get('_user_id')).first()
         user.set_password = form.new_password.data
         db.session.commit()
-        flash('Your password has been reseted.')
+        flash('Your password has been reset.', 'success')
         return redirect(url_for('main.index_func'))
-    return render_template('edit_password.html', form=form)
+    return render_template('main/edit_password.html', form=form)
 
 @main.route('/user-profile/<username>')
 @login_required

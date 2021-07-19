@@ -10,6 +10,7 @@ db = SQLAlchemy()
 mail = Mail()
 login_manager = LoginManager()
 bootstrap = Bootstrap()
+login_manager.login_view = 'auth.login'
 
 def create_app(config_name=None):
     if not isinstance(config_name, str):

@@ -37,7 +37,7 @@ def is_loged_in():
     if request.endpoint in authenticated_routes:
         print('it came here')
         if not session.get('known'):
-            flash("You need to log in", "error")
+            flash("You are not logged in. Please, log in.", "danger")
             # return render_template('app/login_page.html', form=LoginForm()), 401
             return redirect(url_for('auth.login'))
     return 

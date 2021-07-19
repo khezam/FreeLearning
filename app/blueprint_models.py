@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.filter_by(id=user_id).first()
+    return User.query.filter_by(id=int(user_id)).first()
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     __tablename__='users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
-    email = db.Column(db.String(120), index=True, unique=True)
+    email = db.Column(db.String(64), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
@@ -28,7 +28,7 @@ class User(UserMixin, db.Model):
         
     @property
     def set_password(self):
-        raise ValueError("This method is not callable")
+        raise AttributeError('set password is not a readable attribute')
 
     @set_password.setter
     def set_password(self, new_password):

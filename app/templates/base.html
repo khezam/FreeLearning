@@ -22,7 +22,7 @@
                 <a href=" {{ url_for('main.index_func') }}" class="navbar-brand">FreeLearning</a>
             </div>
             <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
+                <ul class="nav navbar-nav navbar-right">
                     {% if session.get('known') %}
                         {% if user and user != current_user %}
                             <br>
@@ -32,6 +32,8 @@
                             <li><a href="{{ url_for('main.reset_password') }}">Reset-Password</a></li>
                             <li><a href="{{ url_for('main.user_profile', username=current_user.username) }}">Profile</a></li>
                         {% endif %}
+                    {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
                     {% endif %}
                 </ul>
             </div>
@@ -41,7 +43,17 @@
 
 {% block content %}
     <div class="container">
-        {% block page_content %}{% endblock page_content %}
+        {% block page_content %}
+            {% set messages = get_flashed_messages(with_categories=True)  %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endblock page_content %}
     </div>
     <h1>
         {% if username %}

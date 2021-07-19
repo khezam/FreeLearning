@@ -2,11 +2,12 @@
 {% block title %}User Profile{% endblock title %}
 {% from 'macro.html' import user_posts with context %}
 
-{% block content %}
+{% block page_content %}
+    {{ super() }}
     <h1><img src="https://www.gravatar.com/avatar/{session['user_avatar']}?s=150&d=identicon" alt="">User: {{ user.username }}</h1>
     {% if user == current_user %}
         <div>
             {{ user_posts(posts) }}
         </div>
     {% endif %}
-{% endblock content %}
+{% endblock page_content %}

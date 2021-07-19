@@ -1,10 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock title %}
 {% from 'macro.html' import user_posts with context%}
+{% import "bootstrap/wtf.html" as wtf %}
 
-{% block content %}
-    <h3>post</h3>
-    <form action="{{ url_for('main.index_func') }}" method="POST">
+{% block page_content %}
+    {{ super() }}
+    <div class="page-header">
+        <h1>Post</h1>
+    </div>
+    <!-- <form action="{{ url_for('main.index_func') }}" method="POST">
         {{ form.hidden_tag()  }}
         <div>
             {{ form.user_post.label }}
@@ -16,6 +20,8 @@
         <div>
             {{ user_posts(posts) }}
         </div>
-    </form>
+    </form> -->
+    {{ wtf.quick_form(form) }}
+    {{ user_posts(posts) }}
 
-{% endblock content %}
+{% endblock page_content %}

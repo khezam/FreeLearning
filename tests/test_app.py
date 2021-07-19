@@ -14,6 +14,6 @@ class ApplicationTest(unittest.TestCase):
     def tearDown(self):
         self.app_ctx.pop()
 
-    def test_email(self):
-        msg = mail.send_message("Testing!", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=['flaskyproject@gmail.com'], body='Thank you testing')
-        self.assertIsNotNone(msg)
+    # def test_email(self):
+    #     msg = mail.send_message("Testing!", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=['flaskyproject@gmail.com'], body='Thank you testing')
+    #     self.assertIsNotNone(msg)
