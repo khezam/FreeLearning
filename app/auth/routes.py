@@ -1,9 +1,10 @@
 import jwt
 from . import auth
 from app import db, mail
+from ..email import send_email
 from flask_mail import Message
 from ..blueprint_models import User
-from .forms import RegisterationForm, LoginForm, ForgotPassword, NewPassword
+from .forms import RegisterationForm, LoginForm, ForgotPassword, NewPassword, ReconfirmToken, UpdatePassword
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user
 from flask import redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, abort, current_app
@@ -33,25 +34,21 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        if not user.confirmed:
-            flash('Your account has not been confirmed. Please, confirm your aacount and try again.', 'danger')
-            return redirect(url_for('auth.login'))
+        if user and not user.confirmed:
+            flash('Your account has not been confirmed. Please, confirm your account and try again.', 'danger')
+            return render_template('auth/unconfirmed.html', username=user.username)
         if user and check_password_hash(user.password_hash, form.password.data):
             login_user(user, form.remember_me.data)
             session['known'] = True
             flash('You have successfully logged in.', 'success')
             return redirect(url_for('main.index_func'))
-    # if request.method == 'POST':
-    #     if not session.get('confirm'):
-    #         flash('Your account has not been confirmed. Please, confirm your aacount and try again.', 'danger')
-    #     else:
         flash('Invalid email or password.', 'danger')
     return render_template('auth/login_page.html', form=form, session=session)
 
-def send_token(subject, token, username=None):
+def send_token(subject, token, username=None, user_id=None):
     session['confirm'] = False
     msg = Message(subject, sender=current_app.config['MAIL_DEFAULT_SENDER'], recipients=['flaskyproject@gmail.com'])
-    msg.html = render_template('token.html', name=username, token=token)
+    msg.html = render_template('token.html', name=username, token=token, user_id=user_id)
     mail.send(msg)
     return 
 
@@ -68,7 +65,7 @@ def register():
         session['id'] = user.id
         session['posts'] = ''
         session['known'] = False
-        send_token("Account confirmation", token, form.username.data)
+        send_email(form.email.data, "Account confirmation", 'auth/email/token', token=token, username=form.username.data, user_id=user.id)
         flash('A confirmation email has been sent to you by email, please confirm!', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/register_page.html', form=form, session=session)
@@ -79,68 +76,62 @@ def forgot_password():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if not user:
-            redirect(url_for('auth.login'))
+            return redirect(url_for('auth.login'))
         token = user.generate_confirmation_token()
-        session['forgot_password'] = True 
-        send_token("Password Reset!", token, user.username)
+        session['forgot_password'] = True
+        send_email(form.email.data, "Password Reset!", 'auth/email/token', token=token, username=user.username, user_id=user.id) 
+        #send_email("Password Reset!", token=token, username=user.username, user_id=user.id)
         flash('An email has been sent to you. Please check your email', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/forgot_password.html', form=form)
 
-# @auth.route('/confirm/<token>')
-# def confirm_token(token):
-#     try:
-#         confirm = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-#         session_token = jwt.decode(session.get('token'), current_app.config['SECRET_KEY'], algorithms=['HS256'])
-#         session['confirm'] = True
-#     except:
-#         flash('This token is invalid')
-#         return redirect(url_for('auth.login'))
-#     if not session.get('known') and not session.get('forgot_password'):
-#         return redirect(url_for('auth.login'))
-#     return redirect(url_for('auth.new_password'))
-
-@auth.route('/confirm/<token>', methods=['GET', 'POST'])
-def confirm_token(token):
-    try:
-        confirmed = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-        user = User.query.filter_by(id=confirmed['confirm']).first()
-        session['confirm'] = True
-    except:
-        flash('This token is invalid', 'danger')
-        return redirect(url_for('auth.login'))
+@auth.route('/confirm/<user_id>/<token>', methods=['GET', 'POST'])
+def confirm_token(user_id, token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index_func'))
     
-    if user.id != confirmed['confirm']:
-        return redirect(url_for('auth.login'))
+    user = User.query.filter_by(id=user_id).first()
+    if user and user.confirm(token):
+        db.session.commit()
+        flash('You have confirmed your account. Thanks!', 'success')
+        if session.get('forgot_password'):
+            form = NewPassword()
+            if form.validate_on_submit():
+                user.set_password = form.new_password.data
+                db.session.commit()
+                flash('Your password has been reset.', 'success')
+            else:
+                return render_template('auth/new_password.html', form=form)
+    else:
+        flash('The confirmation link is invalid or has expired.', 'danger')
+    return redirect(url_for('auth.login'))
 
-    user.confirmed = True
-    db.session.add(user)
-    db.session.commit() 
+@auth.route('/reconfirm_token', methods=['GET', 'POST'])
+def reconfirm_token():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index_func'))
 
-    if not session.get('known') and not session.get('forgot_password'):
-        return redirect(url_for('auth.login'))
-
-    form = NewPassword()
+    form = ReconfirmToken()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        user.set_password = form.new_password.data
-        db.session.commit()
-        flash('Your password has been reset.', 'success')
+        if user:
+            token = user.generate_confirmation_token()
+            send_email(form.email.data, "Account confirmation", 'auth/email/token', token=token, username=user.username, user_id=user.id)
+            flash('A confirmation email has been sent to you by email, please confirm!', 'success')
+        else:
+            flash('This user does not exist', 'danger')
         return redirect(url_for('auth.login'))
-    return render_template('auth/new_password.html', form=form)
+    return render_template('auth/forgot_password.html', form=form)
 
-# @auth.route('/new_password', methods=['GET', 'POST'])
-# def new_password():
-#     if not session.get('confirm'):
-#         flash('You have not confirmed youe account. Please, try again')
-#         return redirect(url_for('auth.login'))
-    
-#     form = NewPassword()
-#     if form.validate_on_submit():
-#         user = User.query.filter_by(email=form.email.data).first()
-#         user.set_password = form.new_password.data
-#         db.session.commit()
-#         send_token('New Password')
-#         flash('Your password has been reset.')
-#         return redirect(url_for('auth.login'))
-#     return render_template('auth/new_password.html', form=form)
+@auth.route('/update-password', methods=['GET', 'POST'])
+@login_required
+def update_password():
+    form = UpdatePassword()
+    if form.validate_on_submit():
+        if check_password_hash(current_user.password_hash, form.old_password.data):
+            current_user.set_password = form.new_password.data
+            db.session.commit()
+            flash('Your password has been updated.', 'success')
+            return redirect(url_for('main.index_func'))
+        flash('Invalid passwords.', 'danger')
+    return render_template('auth/update_password.html', form=form)

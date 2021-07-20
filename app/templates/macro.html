@@ -8,7 +8,6 @@
 
 {% macro user_posts(posts) %}
         {% for post in posts %}
-            {{ post }}
             {% if post != ' ' and post != '' %}
                 <p><img src="https://www.gravatar.com/avatar/{session['user_avatar']}?s=50&d=identicon".format(hash) alt="">{{ post }}</p>
             {% endif %}

@@ -1,5 +1,5 @@
 from . import main 
-from .forms import ResetPassword, PostForm
+from .forms import PostForm
 from ..blueprint_models import User
 from flask_login import login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,17 +27,17 @@ def logout():
     logout_user()
     return redirect(url_for('auth.login'))
 
-@main.route('/reset-password', methods=['GET', 'POST'])
-@login_required
-def reset_password():
-    form = ResetPassword()
-    if form.validate_on_submit():
-        user = User.query.filter_by(id=session.get('_user_id')).first()
-        user.set_password = form.new_password.data
-        db.session.commit()
-        flash('Your password has been reset.', 'success')
-        return redirect(url_for('main.index_func'))
-    return render_template('main/edit_password.html', form=form)
+# @main.route('/reset-password', methods=['GET', 'POST'])
+# @login_required
+# def reset_password():
+#     form = ResetPassword()
+#     if form.validate_on_submit():
+#         user = User.query.filter_by(id=session.get('_user_id')).first()
+#         user.set_password = form.new_password.data
+#         db.session.commit()
+#         flash('Your password has been reset.', 'success')
+#         return redirect(url_for('main.index_func'))
+#     return render_template('main/edit_password.html', form=form)
 
 @main.route('/user-profile/<username>')
 @login_required

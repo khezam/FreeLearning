@@ -23,13 +23,13 @@
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    {% if session.get('known') %}
+                    {% if current_user.is_authenticated %}
                         {% if user and user != current_user %}
                             <br>
                         {% else %}
                             <li><a href="{{ url_for('main.index_func') }}">Home</a></li>
                             <li><a href="{{ url_for('main.logout') }}">Log out</a></li>
-                            <li><a href="{{ url_for('main.reset_password') }}">Reset-Password</a></li>
+                            <li><a href="{{ url_for('auth.update_password') }}">Update-Password</a></li>
                             <li><a href="{{ url_for('main.user_profile', username=current_user.username) }}">Profile</a></li>
                         {% endif %}
                     {% else %}
@@ -55,9 +55,4 @@
             {% endif %}
         {% endblock page_content %}
     </div>
-    <h1>
-        {% if username %}
-                Hello, {{username}}!
-        {% endif %}
-    </h1>
 {% endblock content%}

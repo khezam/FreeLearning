@@ -1,5 +1,6 @@
 import jwt
-from flask import current_app
+from time import time
+from flask import current_app, session
 from . import login_manager, db 
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,8 +28,20 @@ class User(UserMixin, db.Model):
     def add_user(form):
         user = User(username=form.username.data, email=form.email.data, password_hash=generate_password_hash(form.password.data))
         db.session.add(user)
-        return user 
-        
+        return user
+
+    # def update_user(self, **kwargs):
+    #     for field in kwargs:
+    #         if field in self.__dict__:
+    #             if filed == 'username':
+    #                 self.username = kwargs[field]
+    #             elif field == 'email':
+    #                 self.email = kwargs[field]
+    #             else:
+    #                 self.confirmed = kwargs[field]
+    #     db.session.add(self)
+    #     return 
+
     @property
     def set_password(self):
         raise AttributeError('set password is not a readable attribute')
@@ -39,6 +52,19 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return
 
-    def generate_confirmation_token(self, expiration=3600):
-        token = jwt.encode({'confirm': self.id}, current_app.config['SECRET_KEY'], algorithm='HS256')
-        return token 
+    def generate_confirmation_token(self, expires_in=600):
+        token = jwt.encode({'confirm': self.id, 'exp': time() + expires_in}, current_app.config['SECRET_KEY'], algorithm='HS256')
+        return token
+
+    def confirm(self, token):
+        try:
+            confirmed_token = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        except:
+            return False 
+    
+        if self.id != confirmed_token.get('confirm'):
+            return False 
+        
+        # session['confirm'] = True
+        self.confirmed = True 
+        return True 

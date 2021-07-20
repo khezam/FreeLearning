@@ -45,3 +45,17 @@ class NewPassword(FlaskForm):
     email = EmailField(label='Email', validators=[DataRequired(), Length(min=5, max=64), Email()])
     new_password = PasswordField(label='New Password', validators=[DataRequired(), Length(min=5, max=20)])
     submit = SubmitField(label='New Password') 
+
+class ReconfirmToken(FlaskForm):
+    email = EmailField(label='Email', validators=[DataRequired(), Length(min=5, max=60), Email()])
+    submit = SubmitField(label='Submit')
+
+    def validate_old_password(form, field):
+        user = User.query.filter_by(email=field.data)
+        if not user:
+            raise ValidationError ('Invalid email')
+
+class UpdatePassword(FlaskForm):
+    new_password = PasswordField(label='New Password', validators=[DataRequired(), Length(min=5, max=20)])
+    old_password = PasswordField(label='Old Password', validators=[DataRequired()])
+    submit = SubmitField(label='Submit')
