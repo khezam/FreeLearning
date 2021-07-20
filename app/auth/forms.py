@@ -1,9 +1,10 @@
-from ..blueprint_models import User
-from flask import session, flash 
 from flask_wtf import FlaskForm
+from flask import session, flash
+from wtforms import ValidationError
+from ..blueprint_models import User
 from wtforms.fields.html5 import EmailField
-from wtforms.validators import DataRequired, EqualTo, Length, Email, Regexp
 from werkzeug.security import generate_password_hash, check_password_hash
+from wtforms.validators import DataRequired, EqualTo, Length, Email, Regexp
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 
 class LoginForm(FlaskForm):
@@ -24,12 +25,12 @@ class RegisterationForm(FlaskForm):
     def validate_username(form, field):
         user = User.query.filter_by(username=field.data).first()
         if user and user.username == field.data:
-                raise ValueError ('This username exists already. Please choose a different username')
+                raise ValidationError ('This username exists already. Please choose a different username')
             
     def validate_email(form, field):
         user = User.query.filter_by(email=field.data).first()
         if user and user.email == field.data:
-                raise ValueError ('This email exists already. Please choose a different email')
+                raise ValidationError ('This email exists already. Please choose a different email')
 
 class ForgotPassword(FlaskForm):
     email = EmailField(label='Email', validators=[DataRequired(), Length(min=5, max=60), Email()])
@@ -38,7 +39,7 @@ class ForgotPassword(FlaskForm):
     def validate_old_password(form, field):
         user = User.query.filter_by(email=field.data)
         if not user:
-            raise ValueError ('Invalid email')
+            raise ValidationError ('Invalid email')
 
 class NewPassword(FlaskForm):
     email = EmailField(label='Email', validators=[DataRequired(), Length(min=5, max=64), Email()])

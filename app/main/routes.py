@@ -10,7 +10,6 @@ def index():
         It turns out that in a sessoin you can only stor a key/value pair and the value can not be another data structure.
         But, you might able to have a data structure as a value if the session in the server-side.
     """
-    print(request.cookies)
     form = PostForm()
     if form.is_submitted() and form.user_post.data:
         session['posts'] = form.user_post.data +  ',' + session.get('posts', default='')
