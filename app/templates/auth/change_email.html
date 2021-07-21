@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Change Email{% endblock title %}
+{% from 'macro.html' import field_errors with context %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block page_content %}
+    {{ super() }}
+    <div class="page-header">
+        <h1>Change Email</h1>
+    </div>
+    <div class="col-md-4">
+        {{ wtf.quick_form(form) }}
+    </div>
+
+{% endblock page_content %}

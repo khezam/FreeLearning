@@ -4,9 +4,9 @@ from app import db, mail
 from ..email import send_email
 from flask_mail import Message
 from ..blueprint_models import User
-from .forms import RegisterationForm, LoginForm, ForgotPassword, NewPassword, ReconfirmToken, UpdatePassword
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from .forms import RegisterationForm, LoginForm, ForgotPassword, NewPassword, ReconfirmToken, UpdatePassword, ChangeEmailRequest
 from flask import redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, abort, current_app
 
 # @auth.route("/login", methods=["GET", "POST"])
@@ -61,7 +61,7 @@ def register():
     if form.validate_on_submit():
         user = User.add_user(form)
         db.session.commit()
-        token = user.generate_confirmation_token()
+        token = user.generate_confirmation_token('confirm')
         session['id'] = user.id
         session['posts'] = ''
         session['known'] = False
@@ -135,3 +135,30 @@ def update_password():
             return redirect(url_for('main.index_func'))
         flash('Invalid passwords.', 'danger')
     return render_template('auth/update_password.html', form=form)
+
+@auth.route('/change-email', methods=['GET', 'POST'])
+@login_required
+def change_email_request():
+    form = ChangeEmailRequest()
+    if form.validate_on_submit():
+        if check_password_hash(current_user.password_hash, form.password.data) and current_user.email == form.old_email.data.lower():
+            if current_user.email != form.new_email.data:
+                token = current_user.generate_email_change_token('change_email', new_email=form.new_email.data)
+                send_email(form.new_email.data, "Account confirmation", 'auth/email/change_email', token=token, username=current_user.username, user_id=current_user.id)
+                db.session.commit()
+                flash('A confirmation email has been sent to you by email, please follow the instructions and confirm!', 'success')
+                return redirect(url_for('main.index_func'))
+            flash('The new email already exists. Please try again.', 'warning')    
+        else:
+            flash('Invalid email or password.', 'danger')
+    return render_template('auth/change_email.html', form=form)
+
+@auth.route('/change-email/<token>')
+@login_required
+def confirm_change_email_token(token):
+    if current_user.confirm_email_change_token(token):
+        db.session.commit()
+        flash('Your email has been changed.', 'success')
+    else:
+        flash('Invalid email request', 'danger')
+    return redirect(url_for('main.index_func'))

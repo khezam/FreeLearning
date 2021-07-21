@@ -59,3 +59,15 @@ class UpdatePassword(FlaskForm):
     new_password = PasswordField(label='New Password', validators=[DataRequired(), Length(min=5, max=20)])
     old_password = PasswordField(label='Old Password', validators=[DataRequired()])
     submit = SubmitField(label='Submit')
+
+class ChangeEmailRequest(FlaskForm):
+    new_email = EmailField(label='New Email', validators=[DataRequired(), Length(min=5, max=64), Email()])
+    old_email = EmailField(label='Old Email', validators=[DataRequired(), Length(min=5, max=64), Email()])
+    password = PasswordField(label='Password', validators=[DataRequired(), Length(min=5, max=20)])
+    submit = SubmitField(label='Submit')
+
+    def validate_new_email(form, field):
+        user = User.query.filter_by(email=field.data).first()
+        if user and user.email == field.data:
+            flash('The new email already exists. Please try again.', 'warning')
+            raise ValidationError ('This email already exists. Please try again')

@@ -31,6 +31,7 @@
                             <li><a href="{{ url_for('main.logout') }}">Log out</a></li>
                             <li><a href="{{ url_for('auth.update_password') }}">Update-Password</a></li>
                             <li><a href="{{ url_for('main.user_profile', username=current_user.username) }}">Profile</a></li>
+                            <li><a href="{{ url_for('auth.change_email_request') }}">Change-Email</a></li>
                         {% endif %}
                     {% else %}
                     <li><a href="{{ url_for('auth.login') }}">Log In</a></li>

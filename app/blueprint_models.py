@@ -52,19 +52,38 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return
 
-    def generate_confirmation_token(self, expires_in=600):
-        token = jwt.encode({'confirm': self.id, 'exp': time() + expires_in}, current_app.config['SECRET_KEY'], algorithm='HS256')
+    def generate_confirmation_token(self, confirm, expires_in=600, **kwargs):
+        if kwargs:
+            for field in kwargs:
+                token = jwt.encode({confirm: self.id, field: kwargs[field], 'exp': time() + expires_in}, current_app.config['SECRET_KEY'], algorithm='HS256')
+                break 
+        else:
+            token = jwt.encode({confirm: self.id, 'exp': time() + expires_in}, current_app.config['SECRET_KEY'], algorithm='HS256')
         return token
 
-    def confirm(self, token):
+    def confirm(self, token, confirm='confirm'):
         try:
             confirmed_token = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
         except:
             return False 
-    
-        if self.id != confirmed_token.get('confirm'):
+
+        print(f'Here is the token:{confirmed_token}')
+        if self.id != confirmed_token.get(confirm):
             return False 
-        
-        # session['confirm'] = True
+
+        if confirm != 'confirm':
+            return confirmed_token
+
         self.confirmed = True 
         return True 
+
+    def generate_email_change_token(self, confirm, new_email):
+        return self.generate_confirmation_token(confirm, new_email=new_email)
+
+    def confirm_email_change_token(self, token):
+        new_email = self.confirm(token, confirm='change_email')
+        if not new_email or self.query.filter_by(email=new_email.get('new_email')).first():
+            return False
+        self.email = new_email.get('new_email')
+        db.session.add(self)
+        return True
