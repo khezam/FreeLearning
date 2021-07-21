@@ -67,7 +67,7 @@ class User(UserMixin, db.Model):
         except:
             return False 
 
-        print(f'Here is the token:{confirmed_token}')
+        # print(f'Here is the token:{confirmed_token}')
         if self.id != confirmed_token.get(confirm):
             return False 
 
@@ -87,3 +87,12 @@ class User(UserMixin, db.Model):
         self.email = new_email.get('new_email')
         db.session.add(self)
         return True
+
+    def generate_forgot_password_token(self, confirm):
+        return self.generate_confirmation_token(confirm)
+
+    def confirm_forgot_password_token(self, token):
+        confirmed_token = self.confirm(token, confirm='set_password')
+        if not confirmed_token:
+            return False
+        return True    

@@ -71,19 +71,41 @@ def register():
     return render_template('auth/register_page.html', form=form, session=session)
 
 @auth.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
+def forgot_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index_func'))
+
     form = ForgotPassword()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if not user:
+            flash('This email is invalid. Please enter a valid email.', 'danger')
             return redirect(url_for('auth.login'))
-        token = user.generate_confirmation_token()
+        token = user.generate_forgot_password_token('set_password')
         session['forgot_password'] = True
-        send_email(form.email.data, "Password Reset!", 'auth/email/token', token=token, username=user.username, user_id=user.id) 
+        send_email(form.email.data, "Password Reset!", 'auth/email/forgot_password', token=token, username=user.username, user_id=user.id) 
         #send_email("Password Reset!", token=token, username=user.username, user_id=user.id)
         flash('An email has been sent to you. Please check your email', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/forgot_password.html', form=form)
+
+@auth.route('/forgot_password/<user_id>/<token>', methods=['GET', 'POST'])
+def confirm_forgot_password_token(user_id, token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index_func'))
+
+    user = User.query.filter_by(id=user_id).first()
+    if not user or not user.confirm_forgot_password_token(token):
+        flash('Invalid request.', 'danger')
+        return redirect(url_for('auth.login'))
+    flash('You have confirmed your account. Thanks!', 'success')
+    form = NewPassword()
+    if form.validate_on_submit():
+        user.set_password = form.new_password.data
+        db.session.commit()
+        flash('Your password has been reset.', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/new_password.html', form=form)
 
 @auth.route('/confirm/<user_id>/<token>', methods=['GET', 'POST'])
 def confirm_token(user_id, token):
@@ -94,14 +116,14 @@ def confirm_token(user_id, token):
     if user and user.confirm(token):
         db.session.commit()
         flash('You have confirmed your account. Thanks!', 'success')
-        if session.get('forgot_password'):
-            form = NewPassword()
-            if form.validate_on_submit():
-                user.set_password = form.new_password.data
-                db.session.commit()
-                flash('Your password has been reset.', 'success')
-            else:
-                return render_template('auth/new_password.html', form=form)
+        # if session.get('forgot_password'):
+        #     form = NewPassword()
+        #     if form.validate_on_submit():
+        #         user.set_password = form.new_password.data
+        #         db.session.commit()
+        #         flash('Your password has been reset.', 'success')
+        #     else:
+        #         return render_template('auth/new_password.html', form=form)
     else:
         flash('The confirmation link is invalid or has expired.', 'danger')
     return redirect(url_for('auth.login'))
@@ -115,13 +137,13 @@ def reconfirm_token():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            token = user.generate_confirmation_token()
+            token = user.generate_confirmation_token('confirm')
             send_email(form.email.data, "Account confirmation", 'auth/email/token', token=token, username=user.username, user_id=user.id)
             flash('A confirmation email has been sent to you by email, please confirm!', 'success')
         else:
-            flash('This user does not exist', 'danger')
+            flash('Invalid email', 'danger')
         return redirect(url_for('auth.login'))
-    return render_template('auth/forgot_password.html', form=form)
+    return render_template('auth/reconfirm.html', form=form)
 
 @auth.route('/update-password', methods=['GET', 'POST'])
 @login_required
