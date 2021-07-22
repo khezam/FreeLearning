@@ -4,7 +4,7 @@ from app import db, mail
 from ..email import send_email
 from flask_mail import Message
 from ..blueprint_models import User
-from flask_login import login_user, login_required, current_user
+from flask_login import login_user, login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from .forms import RegisterationForm, LoginForm, ForgotPassword, NewPassword, ReconfirmToken, UpdatePassword, ChangeEmailRequest
 from flask import redirect, url_for, request, make_response, session, send_file, render_template, flash, get_flashed_messages, abort, current_app
@@ -28,6 +28,7 @@ from flask import redirect, url_for, request, make_response, session, send_file,
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
+    print(current_user.can(1))
     if current_user.is_authenticated:
         return redirect(url_for('main.index_func')) 
 
@@ -184,3 +185,12 @@ def confirm_change_email_token(token):
     else:
         flash('Invalid email request', 'danger')
     return redirect(url_for('main.index_func'))
+
+@auth.route('/logout')
+@login_required
+def logout():
+    session['known'] = False
+    session['posts'] = ''
+    flash('You have been logged out.', 'success')
+    logout_user()
+    return redirect(url_for('auth.login'))

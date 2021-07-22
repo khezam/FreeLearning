@@ -2,18 +2,76 @@ import jwt
 from time import time
 from flask import current_app, session
 from . import login_manager, db 
-from flask_login import UserMixin
+from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.filter_by(id=int(user_id)).first()
 
+class Permissions:
+    FOLLOW = 1
+    COMMENT = 2
+    WRITE = 4 
+    MODERATE = 8
+    ADMIN = 16
+
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
+    default = db.Column(db.Boolean, default=False, index=True) 
+    permissions = db.Column(db.Integer)
     users = db.relationship('User', backref='role', lazy='dynamic')
+    """
+    Since SQLAlchemy will set the permissions field to None by default, 
+    a class constructor is added that sets it to 0 if an initial value isn’t provided in the constructor arguments.
+    """
+    def __init__(self, **kwargs): 
+        super(Role, self).__init__(**kwargs) 
+        if self.permissions is None:
+            self.permissions = 0
+
+    def add_permission_to_user(self, permission):
+        if not self.user_has_permission(permission):
+            self.permissions += permission
+        return 
+    
+    def remove_permission(self, perm): 
+        if self.user_has_permission(perm):
+            self.permissions -= perm
+
+    def user_has_permission(self, permission):
+        if (self.permissions & permission) != permission:
+            return True 
+        return False
+
+    def user_set_permission(self):
+        self.permissions = 0
+        return
+
+    """
+        Adding roles to the Role table with the permission values. 
+    """
+    @staticmethod
+    def insert_roles():
+        roles = {
+            'User': [Permissions.FOLLOW, Permissions.COMMENT, Permissions.WRITE],
+            'Moderator': [Permissions.FOLLOW, Permissions.COMMENT, Permissions.WRITE, Permissions.MODERATE],
+            'Administrator': [Permissions.FOLLOW, Permissions.COMMENT, Permissions.WRITE, Permissions.MODERATE, Permissions.ADMIN]
+        }
+
+        for each_role in roles:
+            role = Role.query.filter_by(name=each_role).first()
+            if not role:
+                role = Role(name=each_role)
+            role.permissions = 0
+            for permission in roles[each_role]:
+                role.add_permission_to_user(permission)
+            if role.name == 'User':
+                role.default = True 
+            db.session.add(role)
+        db.session.commit()
 
 class User(UserMixin, db.Model):
     __tablename__='users'
@@ -24,23 +82,27 @@ class User(UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     confirmed = db.Column(db.Boolean, default=False)
 
+    def __init__(self, **kwargs): 
+        super(User, self).__init__(**kwargs) 
+        if not self.role:
+            if self.email == current_app.config['FLASKY_ADMIN']:
+                self.role = Role.query.filter_by(name='Administrator').first()
+            else:
+                self.role = Role.query.filter_by(default=True).first()
+    
+    def can_user(self, permission):
+        if self.role and not self.role.user_has_permission(permission):
+            return False 
+        return True 
+    
+    def is_user_administrator(self):
+        return self.can_user(Permissions.ADMIN)
+
     @staticmethod
     def add_user(form):
         user = User(username=form.username.data, email=form.email.data, password_hash=generate_password_hash(form.password.data))
         db.session.add(user)
         return user
-
-    # def update_user(self, **kwargs):
-    #     for field in kwargs:
-    #         if field in self.__dict__:
-    #             if filed == 'username':
-    #                 self.username = kwargs[field]
-    #             elif field == 'email':
-    #                 self.email = kwargs[field]
-    #             else:
-    #                 self.confirmed = kwargs[field]
-    #     db.session.add(self)
-    #     return 
 
     @property
     def set_password(self):
@@ -67,7 +129,6 @@ class User(UserMixin, db.Model):
         except:
             return False 
 
-        # print(f'Here is the token:{confirmed_token}')
         if self.id != confirmed_token.get(confirm):
             return False 
 
@@ -95,4 +156,32 @@ class User(UserMixin, db.Model):
         confirmed_token = self.confirm(token, confirm='set_password')
         if not confirmed_token:
             return False
-        return True    
+        return True
+
+    @staticmethod
+    def insert_user_role():
+        admin_role = Role.query.filter_by(name='Administrator').first()
+        default_role = Role.query.filter_by(default=True).first()
+        users = User.query.all()
+        for user in users:
+            if not user.role:
+                if user.email == current_app.config['FLASKY_ADMIN']:
+                    user.role = admin_role
+                else:
+                    user.role = default_role
+            db.session.add(user)
+        db.session.commit()
+
+    def ping(self):
+        self.last_seen = datetime.utcnow() 
+        db.session.add(self) db.session.commit()
+
+class AnonymousUser(AnonymousUserMixin):
+    def can(self, permissions):
+        return False
+    
+    def is_administrator(self):
+        return False
+
+
+login_manager.anonymous_user = AnonymousUser  

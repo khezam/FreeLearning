@@ -18,14 +18,14 @@ def index():
 
 main.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
 
-@main.route('/logout')
-@login_required
-def logout():
-    session['known'] = False
-    session['posts'] = ''
-    flash('You have been logged out.', 'success')
-    logout_user()
-    return redirect(url_for('auth.login'))
+# @main.route('/logout')
+# @login_required
+# def logout():
+#     session['known'] = False
+#     session['posts'] = ''
+#     flash('You have been logged out.', 'success')
+#     logout_user()
+#     return redirect(url_for('auth.login'))
 
 # @main.route('/reset-password', methods=['GET', 'POST'])
 # @login_required

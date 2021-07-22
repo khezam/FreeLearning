@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_mail import Mail
+from flask_moment import Moment
 from flask_migrate import Migrate
 from config import Config as config
 from flask_login import LoginManager
@@ -10,7 +11,10 @@ db = SQLAlchemy()
 mail = Mail()
 login_manager = LoginManager()
 bootstrap = Bootstrap()
+moment = Moment()
 login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'danger'
+
 
 def create_app(config_name=None):
     if not isinstance(config_name, str):
@@ -19,6 +23,7 @@ def create_app(config_name=None):
     app = Flask(__name__)
     app.config.from_object(config(config_name))
     mail.init_app(app)
+    moment.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
     bootstrap.init_app(app)

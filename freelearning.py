@@ -1,6 +1,7 @@
 import os 
 import psycopg2
 from app import create_app, db
+from flask_login import current_user
 from app.blueprint_models import User, Role
 from flask import render_template, request, session, flash, redirect, url_for
 from flask_migrate import Migrate
@@ -33,11 +34,16 @@ def is_loged_in():
         Using a hook function to check if the user is logged in. Later we will see how to use
         flask login manager.
     """
-    authenticated_routes = {'auth.logout', 'main.index_func', 'main.reset_password', 'main.user_profile'}
-    if request.endpoint in authenticated_routes:
-        print('it came here')
-        if not session.get('known'):
+    # authenticated_routes = {'auth.logout', 'main.index_func', 'main.reset_password', 'main.user_profile'}
+    # if request.endpoint in authenticated_routes:
+    #     print('it came here')
+    #     if not session.get('known'):
+    #         flash("You are not logged in. Please, log in.", "danger")
+    #         # return render_template('app/login_page.html', form=LoginForm()), 401
+    #         return redirect(url_for('auth.login'))
+    if request.endpoint and request.blueprint != 'auth':
+        if current_user.is_anonymous:
             flash("You are not logged in. Please, log in.", "danger")
-            # return render_template('app/login_page.html', form=LoginForm()), 401
             return redirect(url_for('auth.login'))
+        current_user.ping()
     return 
