@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}FreeLearning{% endblock title %}
 {% from 'macro.html' import user_posts with context %}
+{% from 'macro.html' import pagination_widget with context %}
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block page_content %}
@@ -14,4 +15,9 @@
         {% endif %}
     </div>
     {{ user_posts(posts) }}
+    {% if pagination %}
+        <div class="pagination">
+            {{ pagination_widget(pagination, '.index_func') }}
+        </div>
+    {% endif %}
 {% endblock %}

@@ -10,6 +10,7 @@ class Config:
     FLASKY_MAIL_SUBJECT_PREFIX = '[FreeLearning]'
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    FLASKY_POSTS_PER_PAGE = 20
 
     def __new__(cls, config=None):
         url = ''

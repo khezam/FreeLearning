@@ -20,14 +20,20 @@ def index_func():
         db.session.commit()
         # session['posts'] = form.body.data +  ',' + session.get('posts', default='')
         return redirect(url_for('.index_func'))
-    return render_template('index.html', form=form, posts=Post.query.order_by(Post.timestamp.desc()).all()) #post=ssession.get('posts', default='').split(',')
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'], error_out=False)
+    posts = pagination.items
+    return render_template('index.html', form=form, posts=posts, pagination=pagination) #post=ssession.get('posts', default='').split(',')
 
 @main.route('/user-profile/<username>')
 def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     if user is None:
         abort(404)
-    return render_template('user.html', posts=Post.query.order_by(Post.timestamp.desc()).all(), user=user) #post=ssession.get('posts', default='').split(',')
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'], error_out=False)
+    posts = pagination.items
+    return render_template('user.html', posts=posts, user=user, pagination=pagination) #post=ssession.get('posts', default='').split(',')
 
 @main.route('/edit-profile', methods=['GET', 'POST'])
 @login_required

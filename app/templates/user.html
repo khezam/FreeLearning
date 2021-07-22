@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from 'macro.html' import user_posts with context %}
+{% from 'macro.html' import pagination_widget with context %}
 {% block title %}User Profile{% endblock title %}
 
 {% block page_content %}
@@ -34,7 +35,10 @@
         </div>
     </div>
     <h3>Posts by {{ user.username }}</h3>
-    {% if user == current_user %}
-        {{ user_posts(posts) }}
+    {{ user_posts(posts) }}
+    {% if pagination %}
+        <div class="pagination">
+            {{ pagination_widget(pagination, '.user_profile', username=user.username) }}
+        </div>
     {% endif %}
 {% endblock page_content %}
