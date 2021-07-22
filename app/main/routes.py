@@ -2,52 +2,32 @@ from . import main
 from .. import db
 from ..decorators import admin_required
 from .forms import PostForm, EditProfileForm, EditProfileAdminForm
-from ..blueprint_models import User, Role
+from ..blueprint_models import User, Role, Permissions, Post
 from flask_login import login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import redirect, url_for, request, session, render_template, flash, get_flashed_messages, current_app
 
-def index():
+@main.route('/', methods=['GET', 'POST'])
+def index_func():
     """
         It turns out that in a sessoin you can only stor a key/value pair and the value can not be another data structure.
         But, you might able to have a data structure as a value if the session in the server-side.
+        session.get('posts', default='').split(',')
     """
     form = PostForm()
-    if form.is_submitted() and form.user_post.data:
-        session['posts'] = form.user_post.data +  ',' + session.get('posts', default='')
-        return redirect(url_for('main.index_func'))
-    return render_template('main/post.html', form=form, posts=session.get('posts', default='').split(','))
-
-main.add_url_rule('/', endpoint='index_func', view_func=index, methods=['GET', 'POST'])
-
-# @main.route('/logout')
-# @login_required
-# def logout():
-#     session['known'] = False
-#     session['posts'] = ''
-#     flash('You have been logged out.', 'success')
-#     logout_user()
-#     return redirect(url_for('auth.login'))
-
-# @main.route('/reset-password', methods=['GET', 'POST'])
-# @login_required
-# def reset_password():
-#     form = ResetPassword()
-#     if form.validate_on_submit():
-#         user = User.query.filter_by(id=session.get('_user_id')).first()
-#         user.set_password = form.new_password.data
-#         db.session.commit()
-#         flash('Your password has been reset.', 'success')
-#         return redirect(url_for('main.index_func'))
-#     return render_template('main/edit_password.html', form=form)
+    if current_user.can_user(Permissions.WRITE) and form.validate_on_submit():
+        post = Post.add_post(form, current_user._get_current_object())
+        db.session.commit()
+        # session['posts'] = form.body.data +  ',' + session.get('posts', default='')
+        return redirect(url_for('.index_func'))
+    return render_template('index.html', form=form, posts=Post.query.order_by(Post.timestamp.desc()).all()) #post=ssession.get('posts', default='').split(',')
 
 @main.route('/user-profile/<username>')
-@login_required
 def user_profile(username):
-    from hashlib import md5 
     user = User.query.filter_by(username=username).first_or_404()
-    session['user_avatar'] = md5(b'{user.email}').hexdigest()
-    return render_template('user.html', posts=session.get('posts', default='').split(','), user=user)
+    if user is None:
+        abort(404)
+    return render_template('user.html', posts=Post.query.order_by(Post.timestamp.desc()).all(), user=user) #post=ssession.get('posts', default='').split(',')
 
 @main.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
@@ -65,7 +45,6 @@ def edit_profile():
     form.location.data = current_user.location
     form.about_me.data = current_user.about_me
     return render_template('edit_profile.html', form=form)
-
 
 @main.route('/edit-profile/<int:id>', methods=['GET', 'POST'])
 @login_required

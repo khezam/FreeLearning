@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}FreeLearning{% endblock title %}
+{% from 'macro.html' import user_posts with context %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block page_content %}
+    {{ super() }}
+    <div class="page-header">
+        <h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Stranger{% endif %}!</h1>
+    </div>
+    <div>
+        {% if current_user.can_user(Permissions.WRITE) %}
+            {{ wtf.quick_form(form) }}
+        {% endif %}
+    </div>
+    {{ user_posts(posts) }}
+{% endblock %}

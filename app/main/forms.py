@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, BooleanField, TextAreaField, SelectField
 
 class PostForm(FlaskForm):
-    user_post = TextAreaField(label='Post', validators=[DataRequired()])
+    body = TextAreaField(label="What's on your mind?", validators=[DataRequired()])
     submit = SubmitField(label='Submit')
 
 class EditProfileForm(FlaskForm):
