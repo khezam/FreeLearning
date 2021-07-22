@@ -1,6 +1,8 @@
 import jwt
-from time import time
-from flask import current_app, session
+import hashlib
+from time import time 
+from datetime import datetime
+from flask import current_app, session, request
 from . import login_manager, db 
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -42,7 +44,7 @@ class Role(db.Model):
             self.permissions -= perm
 
     def user_has_permission(self, permission):
-        if (self.permissions & permission) != permission:
+        if (self.permissions & permission) == permission:
             return True 
         return False
 
@@ -81,6 +83,12 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     confirmed = db.Column(db.Boolean, default=False)
+    location = db.Column(db.String(64))
+    about_me = db.Column(db.Text())
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    avatar_hash = db.Column(db.String(32))
+    
 
     def __init__(self, **kwargs): 
         super(User, self).__init__(**kwargs) 
@@ -89,6 +97,8 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(name='Administrator').first()
             else:
                 self.role = Role.query.filter_by(default=True).first()
+        if self.email and self.avatar_hash is None:
+            self.avatar_hash = self.gravatar_hash()
     
     def can_user(self, permission):
         if self.role and not self.role.user_has_permission(permission):
@@ -174,7 +184,25 @@ class User(UserMixin, db.Model):
 
     def ping(self):
         self.last_seen = datetime.utcnow() 
-        db.session.add(self) db.session.commit()
+        db.session.add(self) 
+        db.session.commit()
+
+    def is_administrator(self):
+        return self.can_user(Permissions.ADMIN)
+
+    def gravatar_hash(self):
+        return hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+
+    def gravatar(self, size=100, default='identicon', rating='g'):
+        url = 'http://www.gravatar.com/avatar'
+        if request.is_secure:
+            url = 'https://secure.gravatar.com/avatar'
+        hash = self.avatar_hash
+        if not hash:
+            self.avatar_hash = self.gravatar_hash()
+            db.session.add(self)
+            db.session.commit()
+        return f"{url}/{hash}?s={size}&d={default}&r={rating}"
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):
