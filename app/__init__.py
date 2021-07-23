@@ -5,13 +5,15 @@ from flask_migrate import Migrate
 from config import Config as config
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
-from flask_bootstrap import Bootstrap 
+from flask_bootstrap import Bootstrap
+from flask_pagedown import PageDown
 
 db = SQLAlchemy()
 mail = Mail()
 login_manager = LoginManager()
 bootstrap = Bootstrap()
 moment = Moment()
+pagedown = PageDown()
 login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'danger'
 
@@ -26,6 +28,7 @@ def create_app(config_name=None):
     moment.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
+    pagedown.init_app(app)
     bootstrap.init_app(app)
 
     from .auth import auth as auth_blueprint

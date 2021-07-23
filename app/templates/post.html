@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% from 'macro.html' import user_posts with context %}
+{% block title %}Post{% endblock %}
+
+{% block page_content %}
+    {{ user_posts(posts) }}
+{% endblock %}
