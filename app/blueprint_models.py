@@ -101,6 +101,12 @@ class Role(db.Model):
             db.session.add(role)
         db.session.commit()
 
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 class User(UserMixin, db.Model):
     __tablename__='users'
     id = db.Column(db.Integer, primary_key=True)
@@ -116,6 +122,8 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    followed = db.relationship('Follow', foreign_keys=[Follow.follower_id], backref=db.backref('follower', lazy='joined'), lazy='dynamic', cascade='all, delete-orphan')
+    followers = db.relationship('Follow', foreign_keys=[Follow.followed_id], backref=db.backref('followed', lazy='joined'), lazy='dynamic', cascade='all, delete-orphan')
     
 
     def __init__(self, **kwargs): 
@@ -127,6 +135,7 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(default=True).first()
         if self.email and self.avatar_hash is None:
             self.avatar_hash = self.gravatar_hash()
+        self.follow(self)
     
     def can_user(self, permission):
         if self.role and not self.role.user_has_permission(permission):
@@ -141,6 +150,15 @@ class User(UserMixin, db.Model):
         user = User(username=form.username.data, email=form.email.data, password_hash=generate_password_hash(form.password.data))
         db.session.add(user)
         return user
+
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
+        return 
 
     @property
     def set_password(self):
@@ -231,6 +249,32 @@ class User(UserMixin, db.Model):
             db.session.add(self)
             db.session.commit()
         return f"{url}/{hash}?s={size}&d={default}&r={rating}"
+
+    def follow_user(self, user):
+        if not self.is_following(user):
+            follow = Follow(followed=user)
+            self.followed.append(follow)
+            return 
+
+    def unfollow(self, user):
+        user = self.followed.filter_by(followed_id=user.id).first()
+        if user:
+            self.followed.remove(user)
+        return 
+
+    def is_following(self, user):
+        if not user.id or not self.followed.filter_by(followed_id=user.id).first():
+            return False
+        return True 
+
+    def is_followed_by(self, user):
+        if not user.id or self.followers.filter_by(follower_id=user.id).first():
+            return False
+        return True 
+    
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id).filter(Follow.follower_id == self.id)
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):

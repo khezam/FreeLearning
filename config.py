@@ -11,6 +11,7 @@ class Config:
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     FLASKY_POSTS_PER_PAGE = 20
+    FLASKY_FOLLOWERS_PER_PAGE = 50
 
     def __new__(cls, config=None):
         url = ''
