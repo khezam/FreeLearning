@@ -2,7 +2,7 @@ import time
 import unittest
 from datetime import datetime
 from app import create_app, db
-from app.blueprint_models import User, Role, AnonymousUser, Permissions
+from app.blueprint_models import User, Role, AnonymousUser, Permissions, Follow
 from werkzeug.security import generate_password_hash, check_password_hash
 
 

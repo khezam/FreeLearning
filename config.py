@@ -7,11 +7,13 @@ class Config:
     FLASKY_ADMIN = os.getenv('FLASKY_ADMIN')
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = os.getenv('MAIL_PORT')
-    FLASKY_MAIL_SUBJECT_PREFIX = '[FreeLearning]'
-    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
+    FLASKY_MAIL_SUBJECT_PREFIX = 'FreeLearning'
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS').lower() in ['true', 'on', '1']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     FLASKY_POSTS_PER_PAGE = 20
     FLASKY_FOLLOWERS_PER_PAGE = 50
+    FLASKY_COMMENTS_PER_PAGE = 30
+    WTF_CSRF_ENABLED = False
 
     def __new__(cls, config=None):
         url = ''

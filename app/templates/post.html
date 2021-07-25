@@ -1,7 +1,24 @@
 {% extends "base.html" %}
 {% from 'macro.html' import user_posts with context %}
+{% from 'macro.html' import user_comments with context %}
+{% from 'macro.html' import pagination_widget with context %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+
 {% block title %}Post{% endblock %}
 
 {% block page_content %}
     {{ user_posts(posts) }}
-{% endblock %}
+    <h4 id="comments">Comments</h4>
+    {% if current_user.can_user(Permissions.COMMENT) %}
+        <div class="comment-form">
+            {{ wtf.quick_form(form) }}
+        </div>
+    {% endif %}
+    {{ user_comments(comments) }}
+    {% if pagination %}
+        <div class="pagination">
+            {{ pagination_widget(pagination, '.post', fragment='#comments', id=posts[0].id) }}
+        </div>
+    {% endif %}
+{% endblock page_content %}
